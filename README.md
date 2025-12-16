@@ -8,13 +8,12 @@ Interactive 3D visualization of global airport connections using Leafmap and Map
 
 ## Features
 
-- **Arc Layer**: Shows all flight routes from Atlanta (ATL) airport
-- **Airport Points**: Displays connected airports as markers
+- **Interactive Airport Selection**: Choose any major airport from the dropdown menu
+- **Global Routes**: Visualizes 30,000+ flight routes
+- **Arc Layer**: 3D arcs showing connections from the selected airport
+- **Statistics**: View number of routes and destinations for each airport
 - **Layer Control**: Toggle airports and routes on/off
-- **Satellite View**: Switch to Esri World Imagery basemap
-- **3D Tilt**: Hold Ctrl + drag to tilt the map
-- **Globe View**: Click the globe icon for 3D globe projection
-- **Rotate**: Right-click + drag to rotate the map
+- **Navigation**: 3D tilt (Ctrl+Drag), Rotate (Right-click+Drag), and zoom controls
 
 ## Statistics
 
