@@ -1,32 +1,38 @@
 # Global Flight Routes Visualization
 
-Interactive 3D visualization of global airport connections using Leafmap and MapLibre GL JS.
-
-## Features
-
-- View flight routes from any major airport
-- 3D tilt view (Ctrl + drag)
-- Globe projection mode
-- Layer toggle controls
-- Airport statistics overlay
+Interactive 3D visualization of global airport connections using Leafmap and MapLibre GL JS. Based on Dr. Qiusheng Wu's Leafmap tutorial on arc layers.
 
 ## View the Map
 
-Visit: https://edgeoinnovations-resources.github.io/Flight/
+**Live Demo:** https://edgeoinnovations-resources.github.io/Flight/
+
+## Features
+
+- **Arc Layer**: Shows all flight routes from Atlanta (ATL) airport
+- **Airport Points**: Displays connected airports as markers
+- **Layer Control**: Toggle airports and routes on/off
+- **Satellite View**: Switch to Esri World Imagery basemap
+- **3D Tilt**: Hold Ctrl + drag to tilt the map
+- **Globe View**: Click the globe icon for 3D globe projection
+- **Rotate**: Right-click + drag to rotate the map
+
+## Statistics
+
+- **Routes from ATL**: 205 destinations
+- **Connected Airports**: 206 worldwide
 
 ## Technology
 
-- [Leafmap](https://leafmap.org/) - Python mapping library
+- [Leafmap](https://leafmap.org/) - Python mapping library by Dr. Qiusheng Wu
 - [MapLibre GL JS](https://maplibre.org/) - Open-source map rendering
 - Data: [OpenGeos Datasets](https://github.com/opengeos/datasets)
 
-## Usage
+## Data Sources
 
-**Map Controls:**
-- **Ctrl + Drag**: Tilt the map for 3D perspective
-- **Right-click + Drag**: Rotate the map
-- **Scroll**: Zoom in/out
-- **Click globe icon**: Switch to 3D globe view
+| Dataset | URL |
+|---------|-----|
+| Airport Routes CSV | https://github.com/opengeos/datasets/releases/download/world/airport_routes.csv |
+| Airports GeoJSON | https://github.com/opengeos/datasets/releases/download/world/airports.geojson |
 
 ## Local Development
 
@@ -42,29 +48,28 @@ pip install -r requirements.txt
 python generate_map.py
 ```
 
-This will create `index.html` which can be opened in a browser.
+This creates `index.html` which can be opened in a browser.
 
-## Regenerating the Map
+## Generate Map for Different Airport
 
-To regenerate the map with a different airport:
+Edit `generate_map.py` and change the airport code:
 
 ```python
-from generate_map import create_flight_map
+# Available airports include:
+# ATL (Atlanta), JFK (New York), LAX (Los Angeles),
+# ORD (Chicago), DFW (Dallas), DEN (Denver),
+# LHR (London), CDG (Paris), DXB (Dubai),
+# HND (Tokyo), SIN (Singapore), HKG (Hong Kong)
 
-# Create map for JFK airport with custom colors
-m = create_flight_map(
-    selected_airport="JFK",
-    src_color=[255, 0, 0],   # Red source
-    dst_color=[128, 0, 0]    # Dark red destination
-)
-m.to_html("index.html")
+create_flight_map(selected_airport="JFK")  # Change to any 3-letter code
 ```
 
-## Data Sources
-
-- **Airport Routes**: [airport_routes.csv](https://github.com/opengeos/datasets/releases/download/places/airport_routes.csv)
-- **Airport Locations**: [airports.geojson](https://github.com/opengeos/datasets/releases/download/places/airports.geojson)
+Then run:
+```bash
+python generate_map.py
+```
 
 ## Credits
 
-Based on Dr. Qiusheng Wu's Leafmap tutorial on arc layers for transportation route visualization.
+- Based on Dr. Qiusheng Wu's [Leafmap Arc Layer Tutorial](https://leafmap.org/maplibre/arc_layer/)
+- Data from [OpenGeos Datasets](https://github.com/opengeos/datasets)

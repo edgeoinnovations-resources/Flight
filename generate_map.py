@@ -1,6 +1,9 @@
 """
 Flight Routes Visualization with Leafmap MapLibre Backend
-Creates an interactive 3D map showing airport connections
+Based on Dr. Qiusheng Wu's arc layer tutorial
+
+This script generates a standalone HTML file showing flight routes
+from a selected airport. The HTML can be hosted on GitHub Pages.
 
 Requirements:
     pip install leafmap pandas geopandas
@@ -9,112 +12,115 @@ Output:
     index.html - Standalone HTML file for GitHub Pages
 """
 
-import leafmap.maplibregl as leafmap
 import pandas as pd
+import geopandas as gpd
+import leafmap.maplibregl as leafmap
 
-# Data URLs
-ROUTES_URL = "https://github.com/opengeos/datasets/releases/download/world/airport_routes.csv"
-AIRPORTS_URL = "https://github.com/opengeos/datasets/releases/download/world/airports.geojson"
+# Official data URLs from leafmap documentation
+ROUTE_URL = "https://github.com/opengeos/datasets/releases/download/world/airport_routes.csv"
+AIRPORT_URL = "https://github.com/opengeos/datasets/releases/download/world/airports.geojson"
 
 
-def create_flight_map(selected_airport="ATL", src_color=[0, 255, 0], dst_color=[0, 128, 0]):
+def create_flight_map(selected_airport="ATL"):
     """
     Create flight routes map for a specific airport.
 
     Args:
-        selected_airport: 3-letter airport code (default: ATL)
-        src_color: RGB list for source end of arc [R, G, B]
-        dst_color: RGB list for destination end of arc [R, G, B]
+        selected_airport: 3-letter airport code (default: ATL - Atlanta)
 
     Returns:
-        leafmap.Map object
+        Exported HTML file path
     """
-    # Load route data
-    df = pd.read_csv(ROUTES_URL)
 
-    # Filter for selected airport
-    df_filtered = df[df['src_airport'] == selected_airport]
+    # Load data
+    print(f"Loading route data from {ROUTE_URL}...")
+    df = pd.read_csv(ROUTE_URL)
+    print(f"Total routes in dataset: {len(df)}")
 
-    # Get airport info for centering
-    if len(df_filtered) > 0:
-        center_lon = df_filtered['src_lon'].iloc[0]
-        center_lat = df_filtered['src_lat'].iloc[0]
-        airport_name = df_filtered['src_name'].iloc[0]
-    else:
-        center_lon, center_lat = 0, 20
-        airport_name = selected_airport
+    print(f"Loading airport data from {AIRPORT_URL}...")
+    gdf = gpd.read_file(AIRPORT_URL)
+    print(f"Total airports: {len(gdf)}")
 
-    # Create map
+    # Filter routes for selected airport
+    selected_df = df[df["src_airport"] == selected_airport]
+    print(f"Routes from {selected_airport}: {len(selected_df)}")
+
+    if len(selected_df) == 0:
+        print(f"WARNING: No routes found for airport {selected_airport}")
+        print(f"Available airports: {df['src_airport'].unique()[:20]}...")
+        return
+
+    # Get destination airports + source airport for point layer
+    dst_airports = selected_df["dst_airport"].unique().tolist() + [selected_airport]
+    selected_gdf = gdf[gdf["id"].isin(dst_airports)]
+    print(f"Connected airports: {len(selected_gdf)}")
+
+    # Create map centered on US (good for ATL default)
     m = leafmap.Map(
-        center=[center_lon, center_lat],
+        center=[-98, 39],
         zoom=3,
         pitch=0,
-        style="dark-matter"
+        style="liberty"
     )
 
-    # Add airports layer (all airports as points)
-    m.add_geojson(
-        AIRPORTS_URL,
-        layer_type="circle",
-        paint={
-            "circle-radius": 3,
-            "circle-color": "#00ffff",
-            "circle-opacity": 0.7
-        },
-        name="Airports"
+    # Add satellite basemap (hidden by default, can toggle)
+    m.add_basemap(
+        "Esri.WorldImagery",
+        visible=False,
+        before_id=m.first_symbol_layer_id
     )
 
-    # Add arc layer for selected airport's routes
+    # Add airport points (only connected airports)
+    m.add_gdf(
+        selected_gdf,
+        name="Airports",
+        fit_bounds=False
+    )
+
+    # Add arc layer - column names must match exactly
     m.add_arc_layer(
-        df_filtered,
-        src_lat="src_lat",
+        selected_df,
         src_lon="src_lon",
-        dst_lat="dst_lat",
+        src_lat="src_lat",
         dst_lon="dst_lon",
-        src_color=src_color,
-        dst_color=dst_color,
+        dst_lat="dst_lat",
+        src_color=[0, 255, 0],       # Green at source
+        dst_color=[255, 255, 0],     # Yellow at destination
         name=f"Routes from {selected_airport}"
     )
 
-    # Add statistics HTML overlay
-    stats_html = f"""
-    <div style="
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        font-family: Arial, sans-serif;
-        max-width: 250px;
-    ">
-        <h3 style="margin: 0 0 10px 0; color: #00ffff;">{selected_airport}</h3>
-        <p style="margin: 5px 0; font-size: 12px;">{airport_name}</p>
-        <p style="margin: 5px 0;"><strong>Destinations:</strong> {len(df_filtered)}</p>
-        <p style="margin: 5px 0;"><strong>Countries:</strong> {df_filtered['dst_country'].nunique()}</p>
-        <hr style="border-color: #333; margin: 10px 0;">
-        <p style="margin: 5px 0; font-size: 11px; color: #aaa;">
-            <strong>Controls:</strong><br>
-            Ctrl + Drag: Tilt map<br>
-            Right-click + Drag: Rotate
-        </p>
-    </div>
-    """
-    m.add_html(stats_html, position="top-left")
-
-    return m
-
-
-def main():
-    # Create map with default airport (Atlanta - busiest US airport)
-    m = create_flight_map(selected_airport="ATL")
+    # Add layer control for toggling layers
+    m.add_layer_control()
 
     # Export to HTML
+    output_file = "index.html"
     m.to_html(
-        "index.html",
-        title="Global Flight Routes Visualization",
+        output_file,
+        title=f"Flight Routes from {selected_airport}",
         width="100%",
         height="100%"
     )
-    print("Map exported to index.html")
+
+    print(f"\n✅ Map exported to {output_file}")
+    print(f"   Routes shown: {len(selected_df)}")
+    print(f"   Airports shown: {len(selected_gdf)}")
+    return output_file
+
+
+def main():
+    """Generate the map with Atlanta as default airport."""
+
+    # You can change this to any airport code:
+    # ATL (Atlanta), JFK (New York), LAX (Los Angeles),
+    # ORD (Chicago), DFW (Dallas), DEN (Denver), etc.
+
+    create_flight_map(selected_airport="ATL")
+
+    print("\n📍 To deploy:")
+    print("   1. git add .")
+    print("   2. git commit -m 'Update flight routes map'")
+    print("   3. git push origin main")
+    print("   4. Enable GitHub Pages in repository settings")
 
 
 if __name__ == "__main__":
