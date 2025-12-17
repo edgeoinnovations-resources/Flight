@@ -281,6 +281,17 @@ def generate_html(output_file="index.html"):
         } else {
             deckOverlay.setProps({ layers: layers });
         }
+        
+        // Fly to selection
+        const srcFeature = AIRPORTS_GEOJSON.features.find(f => f.properties.id === selectedCode);
+        if (srcFeature) {
+           map.flyTo({ 
+               center: srcFeature.geometry.coordinates, 
+               zoom: 4,
+               pitch: 30,
+               speed: 1.2
+           });
+        }
     }
     
     // Event Listeners
