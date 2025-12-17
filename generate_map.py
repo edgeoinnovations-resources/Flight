@@ -185,7 +185,7 @@ def generate_html(output_file="index.html"):
     // Initialize MapLibre
     const map = new maplibregl.Map({
         container: 'map',
-        style: 'https://tiles.openfreemap.org/styles/liberty',
+        style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
         center: [-84.4, 33.75], // ATL
         zoom: 3,
         pitch: 0,
