@@ -236,8 +236,8 @@ def generate_html(output_file="index.html"):
                 data: filteredRoutes,
                 getSourcePosition: d => [d.src_lon, d.src_lat],
                 getTargetPosition: d => [d.dst_lon, d.dst_lat],
-                getSourceColor: [0, 255, 128],  // Greenish
-                getTargetColor: [255, 200, 0],  // Orange/Yellow
+                getSourceColor: [100, 0, 150],  // Dark Purple
+                getTargetColor: [255, 255, 0],  // Yellow
                 getWidth: 2,
                 pickable: true,
                 autoHighlight: true
