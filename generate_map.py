@@ -19,7 +19,7 @@ def generate_html(output_file="index.html"):
     # Load Routes
     df = pd.read_csv(ROUTE_URL)
     # Keep only necessary columns to reduce size
-    route_cols = ["src_airport", "dst_airport", "src_lat", "src_lon", "dst_lat", "dst_lon"]
+    route_cols = ["src_airport", "dst_airport", "src_lat", "src_lon", "dst_lat", "dst_lon", "src_name", "src_country"]
     df = df[route_cols]
     
     # Convert to list of dicts for JSON embedding
@@ -32,8 +32,18 @@ def generate_html(output_file="index.html"):
     airports_data = json.loads(gdf.to_json())
     print(f"Loaded {len(airports_data['features'])} airports.")
     
-    # Get list of unique source airports for dropdown
-    src_airports = sorted(df["src_airport"].unique().tolist())
+    # Get list of unique source airports with metadata
+    # Create a dictionary to hold metadata for each airport code
+    airport_meta = {}
+    
+    # Iterate through dataframe to collect names and countries for source airports
+    # We drop duplicates to get unique airport codes
+    unique_src = df[['src_airport', 'src_name', 'src_country']].drop_duplicates('src_airport')
+    
+    # Convert to list of dictionaries
+    src_airports_list = unique_src.to_dict(orient='records')
+    # Sort by code
+    src_airports_list.sort(key=lambda x: x['src_airport'])
     
 
     # HTML Template
@@ -69,7 +79,7 @@ def generate_html(output_file="index.html"):
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            width: 300px;
+            width: 320px;
             backdrop-filter: blur(10px);
         }
         
@@ -83,7 +93,7 @@ def generate_html(output_file="index.html"):
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
         
         .legend { font-size: 0.9rem; margin-top: 10px; }
@@ -147,7 +157,7 @@ def generate_html(output_file="index.html"):
     // Embedded Data
     const ROUTES_DATA = __ROUTES_DATA__;
     const AIRPORTS_GEOJSON = __AIRPORTS_GEOJSON__;
-    const SRC_AIRPORTS = __SRC_AIRPORTS__;
+    const SRC_AIRPORTS = __SRC_AIRPORTS__; // Now distinct objects: {src_airport, src_name, src_country}
     
     // Initial State
     let currentAirport = "ATL";
@@ -157,11 +167,18 @@ def generate_html(output_file="index.html"):
     const statsDiv = document.getElementById('stats');
     
     // Populate Dropdown
-    SRC_AIRPORTS.forEach(code => {
+    SRC_AIRPORTS.forEach(item => {
         const option = document.createElement('option');
-        option.value = code;
-        option.text = code;
-        if (code === currentAirport) option.selected = true;
+        option.value = item.src_airport;
+        
+        // Format: CODE - Name, Country
+        // Handle missing names/countries gracefully
+        const name = item.src_name || "Unknown Airport";
+        const country = item.src_country || "";
+        
+        option.text = `${item.src_airport} - ${name}` + (country ? `, ${country}` : "");
+        
+        if (item.src_airport === currentAirport) option.selected = true;
         select.appendChild(option);
     });
     
@@ -240,7 +257,8 @@ def generate_html(output_file="index.html"):
                     if (info.object) {
                         // Optional: Click to select airport if it's a source airport
                         const clickedCode = info.object.properties.id;
-                        if (SRC_AIRPORTS.includes(clickedCode)) {
+                        // Check if valid source airport (exists in list)
+                        if (SRC_AIRPORTS.some(x => x.src_airport === clickedCode)) {
                             select.value = clickedCode;
                             updateLayers();
                         }
@@ -284,7 +302,7 @@ def generate_html(output_file="index.html"):
     # Inject data
     html_content = html_content.replace("__ROUTES_DATA__", str(routes_data))
     html_content = html_content.replace("__AIRPORTS_GEOJSON__", json.dumps(airports_data))
-    html_content = html_content.replace("__SRC_AIRPORTS__", json.dumps(src_airports))
+    html_content = html_content.replace("__SRC_AIRPORTS__", json.dumps(src_airports_list))
 
     
     with open(output_file, "w", encoding="utf-8") as f:
